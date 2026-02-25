@@ -9,26 +9,25 @@ st.markdown("""
     <style>
     /* 추출 버튼 우측 상단 고정 */
     .stDownloadButton { position: fixed; top: 50px; right: 30px; z-index: 999; }
-    /* 붙여넣기 안내 박스 스타일 */
-    .paste-hint {
-        padding: 30px;
-        background-color: #f8f9fa;
-        border: 3px dashed #4A90E2;
+    
+    /* 파일 업로더 영역 강조 */
+    [data-testid="stFileUploader"] {
+        border: 5px solid #4A90E2 !important;
         border-radius: 15px;
-        text-align: center;
-        margin-bottom: 20px;
+        padding: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🛡️ 보안형 영수증 리포트 생성기")
 
-# 2. 이미지 입력 받기 (가장 표준적이고 호환성 높은 방식)
-st.markdown('<div class="paste-hint"><h3>[ 캡처 이미지 붙여넣기 ]</h3><p>아래 <b>"Browse files" 버튼 위를 한 번 클릭</b>한 뒤<br><b>Ctrl + V</b>를 누르면 바로 인식됩니다.</p></div>', unsafe_allow_html=True)
+# 안내 문구
+st.error("⚠️ 주의: 파일 탐색기를 열지 마세요. IT 보안 정책을 준수합니다.")
+st.info("💡 방법: 1.영수증 캡처 -> 2.아래 'Browse files' 버튼을 마우스로 한 번 클릭 -> 3.Ctrl + V")
 
-# 파일 업로더를 다시 사용하지만, '파일 선택' 대신 '붙여넣기 전용'으로 안내합니다.
-# 이 위젯은 클릭 후 Ctrl+V를 하면 브라우저가 이미지를 파일로 변환해서 넣어줍니다.
-img_file = st.file_uploader("여기에 이미지를 붙여넣으세요 (Ctrl+V)", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
+# 2. 이미지 입력 받기 (가장 호환성이 좋은 표준 위젯)
+# 이 위젯을 '클릭'하여 포커스를 준 상태에서 Ctrl+V를 누르면 브라우저가 이미지를 파일로 자동 전환합니다.
+img_file = st.file_uploader("여기를 클릭한 후 Ctrl+V를 누르세요", type=['png', 'jpg', 'jpeg'])
 
 if img_file:
     try:
@@ -36,7 +35,7 @@ if img_file:
         image = Image.open(img_file).convert("RGB")
         width, height = image.size
         
-        # --- [계산 로직: 영수증 분석 결과 가정] ---
+        # --- [계산 로직: 예시 데이터] ---
         supply_val = 125000 
         delivery_count = 5 
         delivery_val = delivery_count * 4000
@@ -69,4 +68,4 @@ if img_file:
             mime="image/jpeg"
         )
     except Exception as e:
-        st.error(f"이미지를 처리할 수 없습니다. 캡처를 다시 한 번만 시도해 주세요.")
+        st.error(f"이미지를 처리할 수 없습니다. 다시 캡처해서 시도해 주세요.")
