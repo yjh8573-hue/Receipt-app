@@ -7,16 +7,14 @@ st.set_page_config(page_title="보안형 영수증 리포트", layout="wide")
 
 st.markdown("""
     <style>
-    /* 파일 업로드 숨기기 */
-    [data-testid="stFileUploader"] { display: none; }
     /* 추출 버튼 우측 상단 고정 */
     .stDownloadButton { position: fixed; top: 50px; right: 30px; z-index: 999; }
-    /* 안내 문구 스타일 */
-    .main-info {
-        padding: 20px;
-        background-color: #e1f5fe;
-        border-radius: 10px;
-        border: 2px solid #01579b;
+    /* 붙여넣기 안내 박스 스타일 */
+    .paste-hint {
+        padding: 30px;
+        background-color: #f8f9fa;
+        border: 3px dashed #4A90E2;
+        border-radius: 15px;
         text-align: center;
         margin-bottom: 20px;
     }
@@ -24,19 +22,21 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.title("🛡️ 보안형 영수증 리포트 생성기")
-st.markdown('<div class="main-info"><h3>[사용 방법]</h3><p>1. 영수증 캡처 (Win+Shift+S)<br>2. <b>맨 아래 "여기에 영수증 이미지..." 칸 클릭</b><br>3. <b>Ctrl + V 누르고 엔터(전송)</b></p></div>', unsafe_allow_html=True)
 
-# 2. 이미지 입력 받기 (하단 채팅창 위젯 활용)
-pasted_img = st.chat_input("여기에 영수증 이미지를 붙여넣으세요 (Ctrl+V 후 엔터)")
+# 2. 이미지 입력 받기 (가장 표준적이고 호환성 높은 방식)
+st.markdown('<div class="paste-hint"><h3>[ 캡처 이미지 붙여넣기 ]</h3><p>아래 <b>"Browse files" 버튼 위를 한 번 클릭</b>한 뒤<br><b>Ctrl + V</b>를 누르면 바로 인식됩니다.</p></div>', unsafe_allow_html=True)
 
-if pasted_img:
+# 파일 업로더를 다시 사용하지만, '파일 선택' 대신 '붙여넣기 전용'으로 안내합니다.
+# 이 위젯은 클릭 후 Ctrl+V를 하면 브라우저가 이미지를 파일로 변환해서 넣어줍니다.
+img_file = st.file_uploader("여기에 이미지를 붙여넣으세요 (Ctrl+V)", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
+
+if img_file:
     try:
         # 데이터 읽기
-        image = Image.open(pasted_img).convert("RGB")
+        image = Image.open(img_file).convert("RGB")
         width, height = image.size
         
         # --- [계산 로직: 영수증 분석 결과 가정] ---
-        # 이 부분은 나중에 실제 영수증 샘플을 주시면 OCR로 자동화해드릴게요!
         supply_val = 125000 
         delivery_count = 5 
         delivery_val = delivery_count * 4000
@@ -48,19 +48,15 @@ if pasted_img:
         result_img.paste(image, (0, 0))
         
         draw = ImageDraw.Draw(result_img)
-        try:
-            font = ImageFont.load_default()
-        except:
-            font = None
+        font = ImageFont.load_default()
 
         margin_left = width + 40
-        # 텍스트 삽입
         draw.text((margin_left, height*0.2), f"도시락 공급가액 : {supply_val:,}원", fill=(0, 0, 0), font=font)
         draw.text((margin_left, height*0.3), f"배달 공급가액 : {delivery_count}회 X 4,000원", fill=(0, 0, 0), font=font)
         draw.text((margin_left, height*0.4), f"총액 : {total_val:,}원", fill=(255, 0, 0), font=font)
 
         # 4. 결과물 표시
-        st.success("✅ 영수증 인식이 완료되었습니다!")
+        st.success("✅ 영수증 인식 성공!")
         st.image(result_img, use_container_width=True)
 
         # 5. [추출] 버튼
@@ -73,4 +69,4 @@ if pasted_img:
             mime="image/jpeg"
         )
     except Exception as e:
-        st.error(f"오류 발생: 이미지를 처리할 수 없습니다. 다시 캡처해서 붙여넣어 주세요.")
+        st.error(f"이미지를 처리할 수 없습니다. 캡처를 다시 한 번만 시도해 주세요.")
