@@ -18,15 +18,16 @@ st.markdown("""
         border-radius: 10px;
         border: 2px solid #01579b;
         text-align: center;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🛡️ 보안형 영수증 리포트 생성기")
-st.markdown('<div class="main-info"><h3>[사용 방법]</h3><p>1. 영수증 캡처 (Win+Shift+S)<br>2. <b>맨 아래 "여기에 영수증 이미지..." 칸 클릭</b><br>3. <b>Ctrl + V 누르기</b></p></div>', unsafe_allow_html=True)
+st.markdown('<div class="main-info"><h3>[사용 방법]</h3><p>1. 영수증 캡처 (Win+Shift+S)<br>2. <b>맨 아래 "여기에 영수증 이미지..." 칸 클릭</b><br>3. <b>Ctrl + V 누르고 엔터(전송)</b></p></div>', unsafe_allow_html=True)
 
-# 2. 이미지 입력 받기 (하단 채팅창 위젯 활용 - 이미지 인식률이 가장 높음)
-pasted_img = st.chat_input("여기에 영수증 이미지를 붙여넣으세요 (Ctrl+V)")
+# 2. 이미지 입력 받기 (하단 채팅창 위젯 활용)
+pasted_img = st.chat_input("여기에 영수증 이미지를 붙여넣으세요 (Ctrl+V 후 엔터)")
 
 if pasted_img:
     try:
@@ -35,11 +36,11 @@ if pasted_img:
         width, height = image.size
         
         # --- [계산 로직: 영수증 분석 결과 가정] ---
+        # 이 부분은 나중에 실제 영수증 샘플을 주시면 OCR로 자동화해드릴게요!
         supply_val = 125000 
         delivery_count = 5 
         delivery_val = delivery_count * 4000
         total_val = supply_val + delivery_val
-        # ---------------------------------------
 
         # 3. 이미지 생성 (우측 확장)
         new_width = int(width * 1.5)
@@ -47,17 +48,19 @@ if pasted_img:
         result_img.paste(image, (0, 0))
         
         draw = ImageDraw.Draw(result_img)
-        # 폰트 설정 (기본 폰트 사용)
-        try: font = ImageFont.load_default()
-        except: font = None
+        try:
+            font = ImageFont.load_default()
+        except:
+            font = None
 
         margin_left = width + 40
+        # 텍스트 삽입
         draw.text((margin_left, height*0.2), f"도시락 공급가액 : {supply_val:,}원", fill=(0, 0, 0), font=font)
         draw.text((margin_left, height*0.3), f"배달 공급가액 : {delivery_count}회 X 4,000원", fill=(0, 0, 0), font=font)
         draw.text((margin_left, height*0.4), f"총액 : {total_val:,}원", fill=(255, 0, 0), font=font)
 
         # 4. 결과물 표시
-        st.success("영수증 인식이 완료되었습니다!")
+        st.success("✅ 영수증 인식이 완료되었습니다!")
         st.image(result_img, use_container_width=True)
 
         # 5. [추출] 버튼
@@ -70,4 +73,4 @@ if pasted_img:
             mime="image/jpeg"
         )
     except Exception as e:
-        st.error("이미지를 처리할 수 없습니다. 캡처 범위를 확인하고 다시 붙여넣어 주세요.")
+        st.error(f"오류 발생: 이미지를 처리할 수 없습니다. 다시 캡처해서 붙여넣어 주세요.")
