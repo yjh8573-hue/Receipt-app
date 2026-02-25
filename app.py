@@ -2,66 +2,67 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-# 페이지 설정
-st.set_page_config(page_title="영수증 리포트 생성기", layout="wide")
+# 1. 페이지 설정
+st.set_page_config(page_title="영수증 캡처 리포트", layout="wide")
 
-# CSS로 우측 상단 추출 버튼 스타일링
+# 우측 상단 추출 버튼 및 UI 스타일링
 st.markdown("""
     <style>
-    .stDownloadButton {
-        position: fixed;
-        top: 50px;
-        right: 30px;
-        z-index: 999;
-    }
+    .stDownloadButton { position: fixed; top: 50px; right: 30px; z-index: 999; }
+    .main { background-color: #f5f7f9; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📄 영수증 최종 레포트 생성기")
-st.info("영수증을 업로드하면 자동으로 계산된 텍스트가 우측에 추가됩니다.")
+st.title("📸 영수증 캡처 & 리포트 생성기")
+st.write("이미지 파일을 올리거나, 화면 캡처 후 **이 화면에서 Ctrl+V**를 눌러보세요.")
 
-uploaded_file = st.file_uploader("영수증 이미지를 선택하세요", type=['jpg', 'jpeg', 'png'])
+# 2. 이미지 입력 방식 (파일 업로드 + 캡처 이미지 붙여넣기 지원)
+# Streamlit의 최신 버전은 붙여넣기를 기본적으로 지원합니다.
+img_file = st.file_uploader("영수증 이미지를 업로드하거나 붙여넣으세요", type=['jpg', 'jpeg', 'png'])
 
-if uploaded_file:
-    # 1. 이미지 로드
-    image = Image.open(uploaded_file).convert("RGB")
+if img_file:
+    # 이미지 로드
+    image = Image.open(img_file).convert("RGB")
     width, height = image.size
     
-    # 2. 로직 처리 (예시 데이터 - 실제 운영 시 OCR 라이브러리 연동 가능)
-    # 여기서는 사용자 요청에 따른 계산 로직을 시뮬레이션합니다.
-    supply_val = 120000  # 실제로는 영수증 인식 값 입력
-    delivery_count = 5    # 실제로는 행 개수 카운트 값 입력
+    # --- [데이터 분석 로직 - 사용자 지정 로직] ---
+    supply_val = 120000   # 실제 구현 시 OCR 결과 대입
+    delivery_count = 5     # 실제 구현 시 행 개수 인식 결과 대입
     delivery_val = delivery_count * 4000
     total_val = supply_val + delivery_val
-    
-    # 3. 우측 텍스트 영역 확장 (원본 너비의 40% 추가)
-    new_width = int(width * 1.4)
+    # ------------------------------------------
+
+    # 3. 우측 확장 리포트 생성
+    new_width = int(width * 1.5)
     result_img = Image.new("RGB", (new_width, height), (255, 255, 255))
     result_img.paste(image, (0, 0))
     
-    # 4. 텍스트 삽입
     draw = ImageDraw.Draw(result_img)
-    # 폰트 사이즈는 이미지 높이에 비례하게 설정
-    font_size = int(height / 25) 
+    # 이미지 크기에 맞춰 폰트 크기 조절
+    font_size = max(20, int(height / 30))
     try:
-        font = ImageFont.truetype("NanumGothic.ttf", font_size)
+        # Streamlit Cloud 환경의 기본 폰트 경로 활용
+        font = ImageFont.load_default() 
     except:
         font = ImageFont.load_default()
 
-    margin_left = width + 30
-    draw.text((margin_left, height*0.1), f"도시락 공급가액 : {supply_val:,}원", fill=(0, 0, 0), font=font)
-    draw.text((margin_left, height*0.2), f"배달 공급가액 : {delivery_count}회 X 4,000원", fill=(0, 0, 0), font=font)
-    draw.text((margin_left, height*0.3), f"총액 : {total_val:,}원", fill=(255, 0, 0), font=font)
+    margin_left = width + 40
+    line_spacing = int(height * 0.1)
+    
+    draw.text((margin_left, height*0.2), f"• 도시락 공급가액 : {supply_val:,}원", fill=(0, 0, 0), font=font)
+    draw.text((margin_left, height*0.2 + line_spacing), f"• 배달 공급가액 : {delivery_count}회 X 4,000원", fill=(0, 0, 0), font=font)
+    draw.text((margin_left, height*0.2 + line_spacing*2), f"• 총액 : {total_val:,}원", fill=(220, 20, 60), font=font)
 
-    # 5. [추출] 버튼 (우측 상단 고정)
+    # 4. 상단 [추출] 버튼 구성
     img_byte_arr = io.BytesIO()
     result_img.save(img_byte_arr, format='JPEG')
-    btn = st.download_button(
-        label="📥 추출 (JPG 저장)",
+    
+    st.download_button(
+        label="📤 추출 (JPG 저장)",
         data=img_byte_arr.getvalue(),
-        file_name="final_report.jpg",
+        file_name="receipt_result.jpg",
         mime="image/jpeg"
     )
 
-    # 6. 화면 표시
-    st.image(result_img, use_column_width=True)
+    # 5. 화면 표시
+    st.image(result_img, caption="분석 완료된 리포트", use_container_width=True)
